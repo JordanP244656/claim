@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands.view import StringView
+import asyncio
 import copy
 
 from core.models import getLogger, DummyMessage
@@ -9,7 +10,8 @@ logger = getLogger(__name__)
 
 PRIORITY_CATEGORY_ID = 1482559663756017716
 
-MESSAGE = "🚨 Priority support ticket opened. Staff have been notified."
+STAFF_PING = "<@698506622263230497>"
+USER_MESSAGE = "🚨 Priority support ticket opened. Staff have been notified."
 
 
 class PriorityMessage(commands.Cog):
@@ -24,15 +26,17 @@ class PriorityMessage(commands.Cog):
 
             channel = thread.channel
 
-            # check category
             if channel.category_id != PRIORITY_CATEGORY_ID:
                 return
 
-            # send message normally
-            await channel.send(MESSAGE)
+            # wait 4 seconds
+            await asyncio.sleep(4)
 
-            # run say2 command
-            command = "say2 Priority ticket detected."
+            # send message in ticket channel
+            await channel.send(f"{STAFF_PING} {USER_MESSAGE}")
+
+            # create internal reply (user sees it)
+            command = f"reply {USER_MESSAGE}"
 
             view = StringView(self.bot.prefix + command)
 
@@ -42,9 +46,10 @@ class PriorityMessage(commands.Cog):
                 self.bot.modmail_guild.me or self.bot.user
             )
 
-            ctx = await self.bot.get_context(synthetic, cls=commands.Context)
+            ctx = await self.bot.get_context(synthetic)
 
             ctx.thread = thread
+            ctx.view = view
 
             await self.bot.invoke(ctx)
 
