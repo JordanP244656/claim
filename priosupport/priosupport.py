@@ -10,8 +10,9 @@ logger = getLogger(__name__)
 
 PRIORITY_CATEGORY_ID = 1482559663756017716
 
+
 STAFF_PING = "<@698506622263230497>"
-USER_MESSAGE = "🚨 Priority support ticket opened. Staff have been notified."
+MESSAGE = "🚨 Priority support ticket opened. Staff have been notified."
 
 
 class PriorityMessage(commands.Cog):
@@ -26,17 +27,20 @@ class PriorityMessage(commands.Cog):
 
             channel = thread.channel
 
-            if channel.category_id != PRIORITY_CATEGORY_ID:
+            if not channel or channel.category_id != PRIORITY_CATEGORY_ID:
                 return
 
-            # wait 4 seconds
+            # wait for modmail thread setup
             await asyncio.sleep(4)
 
-            # send message in ticket channel
-            await channel.send(f"{STAFF_PING} {USER_MESSAGE}")
+            # message inside ticket
+            await channel.send(f"{STAFF_PING} {MESSAGE}")
 
-            # send DM to user through Modmail
-            await thread.reply(USER_MESSAGE)
+            # send DM to user through modmail
+            await thread.reply(
+                message=MESSAGE,
+                anonymous=False
+            )
 
         except Exception as e:
             logger.error(f"Priority plugin error: {e}")
