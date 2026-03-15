@@ -10,7 +10,6 @@ TARGET_MESSAGE_ID = 1482883082217586831
 PRIORITY_CATEGORY_ID = 1088928972592644116
 STAFF_ROLE_ID = 123456789012345678
 
-
 class PrioritySupport(commands.Cog):
 
     def __init__(self, bot):
@@ -38,7 +37,11 @@ class PrioritySupport(commands.Cog):
 
         try:
 
-            thread = await self.bot.threads.create(user)
+            # BYPASS THREADMENU
+            thread = await self.bot.threads.create(
+                recipient=user,
+                manual_trigger=True
+            )
 
             if not thread:
                 return
@@ -50,11 +53,20 @@ class PrioritySupport(commands.Cog):
                 await channel.edit(category=category)
 
             await channel.send(
-                f"<@&{STAFF_ROLE_ID}>\n🚨 **Priority Support Ticket**\nStaff have been notified."
+                f"<@&{STAFF_ROLE_ID}> 🚨 **Priority Support Ticket**\n"
+                f"Opened by {user.mention}"
             )
 
         except Exception as e:
             logger.error(f"Priority ticket error: {e}")
+
+        # remove ONLY the user's reaction so they can click again later
+        try:
+            reaction_channel = self.bot.get_channel(payload.channel_id)
+            message = await reaction_channel.fetch_message(payload.message_id)
+            await message.remove_reaction(payload.emoji, user)
+        except Exception:
+            pass
 
 
 async def setup(bot):
