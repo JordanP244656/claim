@@ -28,7 +28,17 @@ async def claim_check(ctx):
         allowed_to_reply = True
 
     if not allowed_to_reply:
-        raise commands.CheckFailure("CLAIM_REQUIRED")
+        if not hasattr(ctx, "_claim_warning_sent"):
+            ctx._claim_warning_sent = True
+
+            embed = discord.Embed(
+                title="Thread Not Claimed",
+                description="You need to claim this ticket to reply.\nUse `[p]claim` first.",
+                color=ctx.bot.error_color,
+            )
+            await ctx.send(embed=embed)
+
+        return False
 
     return True
 
