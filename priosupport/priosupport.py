@@ -1,73 +1,56 @@
 import discord
 from discord.ext import commands
+from discord.ext.commands.view import StringView
+import copy
 
-from core.models import getLogger
+from core.models import getLogger, DummyMessage
 
 logger = getLogger(__name__)
 
-PRIORITY_EMOJI = "⭐"
-TARGET_MESSAGE_ID = 1482883082217586831
-PRIORITY_CATEGORY_ID = 1088928972592644116
-STAFF_ROLE_ID = 123456789012345678
+PRIORITY_CATEGORY_ID = 1482559663756017716
 
-class PrioritySupport(commands.Cog):
+MESSAGE = "🚨 Priority support ticket opened. Staff have been notified."
+
+
+class PriorityMessage(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-
-        if payload.user_id == self.bot.user.id:
-            return
-
-        if payload.message_id != TARGET_MESSAGE_ID:
-            return
-
-        if str(payload.emoji) != PRIORITY_EMOJI:
-            return
-
-        guild = self.bot.get_guild(payload.guild_id)
-        if not guild:
-            return
-
-        user = guild.get_member(payload.user_id)
-        if not user:
-            return
+    async def on_thread_create(self, thread):
 
         try:
-
-            # BYPASS THREADMENU
-            thread = await self.bot.threads.create(
-                recipient=user,
-                manual_trigger=True
-            )
-
-            if not thread:
-                return
 
             channel = thread.channel
 
-            category = guild.get_channel(PRIORITY_CATEGORY_ID)
-            if category:
-                await channel.edit(category=category)
+            # check category
+            if channel.category_id != PRIORITY_CATEGORY_ID:
+                return
 
-            await channel.send(
-                f"<@&{STAFF_ROLE_ID}> 🚨 **Priority Support Ticket**\n"
-                f"Opened by {user.mention}"
+            # send message normally
+            await channel.send(MESSAGE)
+
+            # run say2 command
+            command = "say2 Priority ticket detected."
+
+            view = StringView(self.bot.prefix + command)
+
+            synthetic = DummyMessage(copy.copy(thread._genesis_message))
+
+            synthetic.author = (
+                self.bot.modmail_guild.me or self.bot.user
             )
 
-        except Exception as e:
-            logger.error(f"Priority ticket error: {e}")
+            ctx = await self.bot.get_context(synthetic, cls=commands.Context)
 
-        # remove ONLY the user's reaction so they can click again later
-        try:
-            reaction_channel = self.bot.get_channel(payload.channel_id)
-            message = await reaction_channel.fetch_message(payload.message_id)
-            await message.remove_reaction(payload.emoji, user)
-        except Exception:
-            pass
+            ctx.thread = thread
+
+            await self.bot.invoke(ctx)
+
+        except Exception as e:
+            logger.error(f"Priority plugin error: {e}")
 
 
 async def setup(bot):
-    await bot.add_cog(PrioritySupport(bot))
+    await bot.add_cog(PriorityMessage(bot))
