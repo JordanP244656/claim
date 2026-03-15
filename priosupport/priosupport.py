@@ -5,23 +5,10 @@ from core.models import getLogger
 
 logger = getLogger(__name__)
 
-# SETTINGS
-
 PRIORITY_EMOJI = "⭐"
-
-# message users react to
-TARGET_MESSAGE_ID = 1482882302865313922
-
-# category for priority tickets
+TARGET_MESSAGE_ID = 1482883082217586831
 PRIORITY_CATEGORY_ID = 1088928972592644116
-
-# staff role to ping
-STAFF_ROLE_ID = nil
-
-
-PRIORITY_MESSAGE = (
-    "e"
-)
+STAFF_ROLE_ID = 123456789012345678
 
 
 class PrioritySupport(commands.Cog):
@@ -29,19 +16,15 @@ class PrioritySupport(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+    async def on_raw_reaction_add(self, payload):
 
-        # ignore bot reactions
         if payload.user_id == self.bot.user.id:
             return
 
-        # only allow reaction on the panel message
         if payload.message_id != TARGET_MESSAGE_ID:
             return
 
-        # only allow correct emoji
         if str(payload.emoji) != PRIORITY_EMOJI:
             return
 
@@ -55,7 +38,6 @@ class PrioritySupport(commands.Cog):
 
         try:
 
-            # create modmail thread
             thread = await self.bot.threads.create(user)
 
             if not thread:
@@ -63,29 +45,16 @@ class PrioritySupport(commands.Cog):
 
             channel = thread.channel
 
-            # move to priority category
             category = guild.get_channel(PRIORITY_CATEGORY_ID)
-
             if category:
                 await channel.edit(category=category)
 
-            # ping staff
-            staff_ping = f"<@&{STAFF_ROLE_ID}>"
-
             await channel.send(
-                f"{staff_ping}\n{PRIORITY_MESSAGE}"
+                f"<@&{STAFF_ROLE_ID}>\n🚨 **Priority Support Ticket**\nStaff have been notified."
             )
 
         except Exception as e:
             logger.error(f"Priority ticket error: {e}")
-
-        # remove reaction so it can't be spammed
-        try:
-            reaction_channel = self.bot.get_channel(payload.channel_id)
-            message = await reaction_channel.fetch_message(payload.message_id)
-            await message.remove_reaction(payload.emoji, user)
-        except:
-            pass
 
 
 async def setup(bot):
