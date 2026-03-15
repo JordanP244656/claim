@@ -9,7 +9,6 @@ logger = getLogger(__name__)
 PRIORITY_CATEGORY_ID = 1482559663756017716
 
 STAFF_PING = "<@698506622263230497>"
-MESSAGE = "🚨 Priority support ticket opened. Staff have been notified."
 
 
 class PrioSupport(commands.Cog):
@@ -22,18 +21,41 @@ class PrioSupport(commands.Cog):
 
         try:
 
-            # only run for priority category
             if not category or category.id != PRIORITY_CATEGORY_ID:
                 return
 
-            # small delay so modmail finishes setup
             await asyncio.sleep(2)
 
-            # send message in ticket
-            await thread.channel.send(f"{STAFF_PING} {MESSAGE}")
+            # STAFF EMBED (ticket channel)
+            staff_embed = discord.Embed(
+                title="🚨 Priority Support Ticket",
+                description=(
+                    f"A **priority ticket** has been opened by {thread.recipient.mention}.\n\n"
+                    "Staff have been notified and should respond as soon as possible."
+                ),
+                color=discord.Color.red()
+            )
 
-            # DM the user
-            await thread.recipient.send(MESSAGE)
+            staff_embed.set_footer(text="ImageWorks Support System")
+
+            await thread.channel.send(
+                content=STAFF_PING,
+                embed=staff_embed
+            )
+
+            # USER EMBED (DM)
+            user_embed = discord.Embed(
+                title="Priority Support Ticket Opened",
+                description=(
+                    "Your **priority support ticket** has been received.\n\n"
+                    "A member of our support team will assist you shortly."
+                ),
+                color=discord.Color.blue()
+            )
+
+            user_embed.set_footer(text="ImageWorks Support")
+
+            await thread.recipient.send(embed=user_embed)
 
         except Exception as e:
             logger.error(f"Priority plugin error: {e}")
