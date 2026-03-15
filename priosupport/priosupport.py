@@ -30,13 +30,27 @@ class PriorityMessage(commands.Cog):
             if not channel or channel.category_id != PRIORITY_CATEGORY_ID:
                 return
 
+            # allow modmail to finish thread setup
             await asyncio.sleep(4)
 
-            # message inside the ticket
+            # message inside the ticket for staff
             await channel.send(f"{STAFF_PING} {MESSAGE}")
 
-            # send message to the user via modmail DM
-            await thread.send(MESSAGE)
+            # simulate staff reply command
+            command = f"reply {MESSAGE}"
+
+            view = StringView(self.bot.prefix + command)
+
+            synthetic = DummyMessage(copy.copy(thread._genesis_message))
+
+            synthetic.author = self.bot.modmail_guild.me or self.bot.user
+
+            ctx = await self.bot.get_context(synthetic)
+
+            ctx.thread = thread
+            ctx.view = view
+
+            await self.bot.invoke(ctx)
 
         except Exception as e:
             logger.error(f"Priority plugin error: {e}")
