@@ -14,7 +14,6 @@ PRIORITY_CATEGORY_ID = 1482559663756017716
 STAFF_PING = "<@698506622263230497>"
 MESSAGE = "🚨 Priority support ticket opened. Staff have been notified."
 
-
 class PriorityMessage(commands.Cog):
 
     def __init__(self, bot):
@@ -30,27 +29,14 @@ class PriorityMessage(commands.Cog):
             if not channel or channel.category_id != PRIORITY_CATEGORY_ID:
                 return
 
-            # allow modmail to finish thread setup
+            # wait for modmail to finish setup
             await asyncio.sleep(4)
 
-            # message inside the ticket for staff
+            # send message in ticket channel
             await channel.send(f"{STAFF_PING} {MESSAGE}")
 
-            # simulate staff reply command
-            command = f"reply {MESSAGE}"
-
-            view = StringView(self.bot.prefix + command)
-
-            synthetic = DummyMessage(copy.copy(thread._genesis_message))
-
-            synthetic.author = self.bot.modmail_guild.me or self.bot.user
-
-            ctx = await self.bot.get_context(synthetic)
-
-            ctx.thread = thread
-            ctx.view = view
-
-            await self.bot.invoke(ctx)
+            # send DM to user via modmail
+            await thread.send_to_user(MESSAGE)
 
         except Exception as e:
             logger.error(f"Priority plugin error: {e}")
