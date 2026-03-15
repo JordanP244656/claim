@@ -1,46 +1,43 @@
 import discord
 from discord.ext import commands
-from discord.ext.commands.view import StringView
 import asyncio
-import copy
 
-from core.models import getLogger, DummyMessage
+from core.models import getLogger
 
 logger = getLogger(__name__)
 
 PRIORITY_CATEGORY_ID = 1482559663756017716
 
-
 STAFF_PING = "<@698506622263230497>"
 MESSAGE = "🚨 Priority support ticket opened. Staff have been notified."
 
-class PriorityMessage(commands.Cog):
+
+class PrioSupport(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_thread_create(self, thread):
+    async def on_thread_ready(self, thread, creator, category, initial_message):
 
         try:
 
-            channel = thread.channel
-
-            if not channel or channel.category_id != PRIORITY_CATEGORY_ID:
+            # only run for priority category
+            if not category or category.id != PRIORITY_CATEGORY_ID:
                 return
 
-            # wait for modmail to finish setup
-            await asyncio.sleep(4)
+            # small delay so modmail finishes setup
+            await asyncio.sleep(2)
 
-            # send message in ticket channel
-            await channel.send(f"{STAFF_PING} {MESSAGE}")
+            # send message in ticket
+            await thread.channel.send(f"{STAFF_PING} {MESSAGE}")
 
-            # send DM to user via modmail
-            await thread.send_to_user(MESSAGE)
+            # DM the user
+            await thread.recipient.send(MESSAGE)
 
         except Exception as e:
             logger.error(f"Priority plugin error: {e}")
 
 
 async def setup(bot):
-    await bot.add_cog(PriorityMessage(bot))
+    await bot.add_cog(PrioSupport(bot))
