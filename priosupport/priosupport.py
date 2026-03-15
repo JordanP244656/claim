@@ -28,10 +28,10 @@ class PrioSupport(commands.Cog):
 
             # STAFF EMBED (ticket channel)
             staff_embed = discord.Embed(
-                title="🚨 Priority Support Ticket",
+                title="Priority Support Ticket",
                 description=(
                     f"A **priority ticket** has been opened by {thread.recipient.mention}.\n\n"
-                    "Staff have been notified and should respond as soon as possible."
+                    "Staff should respond as soon as possible."
                 ),
                 color=discord.Color.red()
             )
@@ -48,7 +48,8 @@ class PrioSupport(commands.Cog):
                 title="Priority Support Ticket Opened",
                 description=(
                     "Your **priority support ticket** has been received.\n\n"
-                    "A member of our support team will assist you shortly."
+                    "A member of our support team will assist you shortly.\n\n"
+                    "Please provide us with as much detail as possible about your issue to help us resolve it quickly."
                 ),
                 color=discord.Color.blue()
             )
