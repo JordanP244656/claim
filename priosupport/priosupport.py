@@ -35,23 +35,8 @@ class PriorityMessage(commands.Cog):
             # send message in ticket channel
             await channel.send(f"{STAFF_PING} {USER_MESSAGE}")
 
-            # create internal reply (user sees it)
-            command = f"reply {USER_MESSAGE}"
-
-            view = StringView(self.bot.prefix + command)
-
-            synthetic = DummyMessage(copy.copy(thread._genesis_message))
-
-            synthetic.author = (
-                self.bot.modmail_guild.me or self.bot.user
-            )
-
-            ctx = await self.bot.get_context(synthetic)
-
-            ctx.thread = thread
-            ctx.view = view
-
-            await self.bot.invoke(ctx)
+            # send DM to user through Modmail
+            await thread.reply(USER_MESSAGE)
 
         except Exception as e:
             logger.error(f"Priority plugin error: {e}")
