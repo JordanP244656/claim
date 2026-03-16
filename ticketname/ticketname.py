@@ -11,19 +11,20 @@ class TicketName(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+        # register config key if it doesn't exist
+        if "ticket_counter" not in bot.config._cache:
+            bot.config._cache["ticket_counter"] = 0
+
 
     async def get_next_ticket(self):
 
-        try:
-            current = await self.bot.config.get("ticket_counter")
-        except Exception:
-            current = None
+        current = await self.bot.config.get("ticket_counter")
 
         if not isinstance(current, int):
             current = 0
-            await self.bot.config.set("ticket_counter", current)
 
         current += 1
+
         await self.bot.config.set("ticket_counter", current)
 
         return current
