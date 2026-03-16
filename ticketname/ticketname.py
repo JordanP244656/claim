@@ -14,11 +14,14 @@ class TicketNumbers(commands.Cog):
 
     async def next_ticket(self):
 
-        config = await self.bot.config.all()
+        number = await self.bot.config.get("ticket_counter")
 
-        number = config.get("ticket_counter", 0) + 1
+        if number is None:
+            number = 0
 
-        await self.bot.config.update({"ticket_counter": number})
+        number += 1
+
+        await self.bot.config.set("ticket_counter", number)
 
         return number
 
