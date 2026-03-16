@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-
 from core.models import getLogger
 
 logger = getLogger(__name__)
@@ -15,9 +14,7 @@ class TicketName(commands.Cog):
     async def get_next_ticket(self):
 
         number = await self.bot.config.get("ticket_counter", 0)
-
         number += 1
-
         await self.bot.config.set("ticket_counter", number)
 
         return number
@@ -32,7 +29,6 @@ class TicketName(commands.Cog):
 
             ticket_id = f"{number:03}"
 
-            # rename the ticket channel
             await thread.channel.edit(name=ticket_id)
 
         except Exception as e:
