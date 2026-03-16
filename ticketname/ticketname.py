@@ -6,18 +6,15 @@ from core.models import getLogger
 logger = getLogger(__name__)
 
 
-class TicketNumbers(commands.Cog):
+class TicketName(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
 
 
-    async def next_ticket(self):
+    async def get_next_ticket(self):
 
-        number = await self.bot.config.get("ticket_counter")
-
-        if number is None:
-            number = 0
+        number = await self.bot.config.get("ticket_counter", 0)
 
         number += 1
 
@@ -31,26 +28,16 @@ class TicketNumbers(commands.Cog):
 
         try:
 
-            number = await self.next_ticket()
+            number = await self.get_next_ticket()
 
             ticket_id = f"{number:03}"
 
-            # rename channel
-            await thread.channel.edit(
-                name=f"ticket-{ticket_id}"
-            )
-
-            embed = discord.Embed(
-                title=f"Ticket #{ticket_id}",
-                description=f"This ticket has been assigned ID **#{ticket_id}**.",
-                color=discord.Color.blurple()
-            )
-
-            await thread.channel.send(embed=embed)
+            # rename the ticket channel
+            await thread.channel.edit(name=ticket_id)
 
         except Exception as e:
-            logger.error(f"TicketNumbers error: {e}")
+            logger.error(f"TicketName error: {e}")
 
 
 async def setup(bot):
-    await bot.add_cog(TicketNumbers(bot))
+    await bot.add_cog(TicketName(bot))
