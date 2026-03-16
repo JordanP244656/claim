@@ -7,30 +7,26 @@ logger = getLogger(__name__)
 
 
 class TicketName(commands.Cog):
+    """Automatically assigns ticket numbers to channels"""
 
     def __init__(self, bot):
         self.bot = bot
 
 
-    async def next_ticket(self):
+    async def get_next_ticket(self):
         try:
+            current = await self.bot.config.get("ticket_counter")
+        except:
+            current = None
 
-            config = await self.bot.config.all()
+        if not isinstance(current, int):
+            current = 0
 
-            number = config.get("ticket_counter")
+        current += 1
 
-            if number is None:
-                number = 0
+        await self.bot.config.set("ticket_counter", current)
 
-            number += 1
-
-            await self.bot.config.update({"ticket_counter": number})
-
-            return number
-
-        except Exception as e:
-            logger.error(f"Ticket counter error: {e}")
-            return None
+        return current
 
 
     @commands.Cog.listener()
@@ -38,28 +34,15 @@ class TicketName(commands.Cog):
 
         try:
 
-            number = await self.next_ticket()
-
-            if number is None:
-                return
+            number = await self.get_next_ticket()
 
             ticket_id = f"{number:03}"
 
-            # Rename channel
-            await thread.channel.edit(
-                name=f"ticket-{ticket_id}"
-            )
+            # rename channel (same style as your rename command)
+            await thread.channel.edit(name=ticket_id)
 
-            # Send embed
-            embed = discord.Embed(
-                title=f"Support Ticket #{ticket_id}",
-                description=f"Ticket ID: **#{ticket_id}**",
-                color=discord.Color.blurple()
-            )
-
-            embed.set_footer(text="ImageWorks Support System")
-
-            await thread.channel.send(embed=embed)
+        except discord.errors.Forbidden:
+            logger.error("Missing permissions to rename ticket channel.")
 
         except Exception as e:
             logger.error(f"TicketName error: {e}")
