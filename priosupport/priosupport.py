@@ -8,7 +8,7 @@ logger = getLogger(__name__)
 
 PRIORITY_CATEGORY_ID = 1482559663756017716
 
-STAFF_PING = "<@698506622263230497>"
+STAFF_PING = "<@&1179699660181475338>"
 
 
 class PrioSupport(commands.Cog):
