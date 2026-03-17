@@ -13,18 +13,18 @@ class CloseReactionEverywhere(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    # 🔹 Add to FIRST message (genesis)
+    # 🔹 Genesis message
     @commands.Cog.listener()
     async def on_thread_ready(self, thread, creator, category, initial_message):
         try:
             msg = await thread.get_genesis_message()
-            if msg:
+            if msg and self.is_valid_modmail_message(msg):
                 emoji = discord.PartialEmoji(name=EMOJI_NAME, id=CUSTOM_EMOJI_ID)
                 await msg.add_reaction(emoji)
         except Exception as e:
             logger.warning(f"[CloseReaction] Genesis failed: {e}")
 
-    # 🔹 Add to EVERY reply (including snippets)
+    # 🔹 Replies (snippet safe + filtered)
     @commands.Cog.listener()
     async def on_thread_reply(self, thread, from_mod, message, anonymous, plain):
         if not from_mod:
@@ -36,16 +36,37 @@ class CloseReactionEverywhere(commands.Cog):
 
             emoji = discord.PartialEmoji(name=EMOJI_NAME, id=CUSTOM_EMOJI_ID)
 
-            # 🔥 ONLY react to messages JUST sent (no scanning spam)
-            async for msg in dm.history(limit=3):
-                if msg.author.id == self.bot.user.id:
-                    try:
-                        await msg.add_reaction(emoji)
-                    except:
-                        pass
+            async for msg in dm.history(limit=5):
+                if msg.author.id != self.bot.user.id:
+                    continue
+
+                if not self.is_valid_modmail_message(msg):
+                    continue  # 🔥 skip bad messages
+
+                try:
+                    await msg.add_reaction(emoji)
+                except:
+                    pass
 
         except Exception as e:
             logger.warning(f"[CloseReaction] Reply failed: {e}")
+
+    # 🔥 FILTER FUNCTION (THIS FIXES YOUR ERROR)
+    def is_valid_modmail_message(self, msg: discord.Message):
+        if not msg.embeds:
+            return False
+
+        embed = msg.embeds[0]
+
+        # MUST have author + URL (this is the joint ID system)
+        if not embed.author or not embed.author.url:
+            return False
+
+        # MUST be sent by bot
+        if msg.author.id != self.bot.user.id:
+            return False
+
+        return True
 
 
 async def setup(bot):
