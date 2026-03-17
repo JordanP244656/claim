@@ -6,7 +6,6 @@ logger = getLogger(__name__)
 
 
 class TicketName(commands.Cog):
-    """Automatically assigns sequential ticket numbers"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -17,11 +16,14 @@ class TicketName(commands.Cog):
         highest = 0
 
         for channel in guild.text_channels:
+
             name = channel.name
 
-            # only check channels that are numbers like 001, 002
+            # Only consider channels that are pure numbers
             if name.isdigit():
+
                 num = int(name)
+
                 if num > highest:
                     highest = num
 
@@ -35,9 +37,9 @@ class TicketName(commands.Cog):
 
             guild = thread.channel.guild
 
-            number = self.get_next_ticket_number(guild)
+            next_number = self.get_next_ticket_number(guild)
 
-            ticket_id = f"{number:03}"
+            ticket_id = f"{next_number:03}"
 
             await thread.channel.edit(name=ticket_id)
 
