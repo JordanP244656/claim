@@ -5,54 +5,61 @@ from core.models import getLogger
 
 logger = getLogger(__name__)
 
-
-class CloseButtonView(discord.ui.View):
-    def __init__(self, bot, user):
-        super().__init__(timeout=None)
-        self.bot = bot
-        self.user = user
-
-    @discord.ui.button(label="Close Ticket", style=discord.ButtonStyle.danger, emoji="🔒")
-    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-
-        # Only ticket owner can press
-        if interaction.user.id != self.user.id:
-            await interaction.response.send_message("You can't close this ticket.", ephemeral=True)
-            return
-
-        thread = await self.bot.threads.find(self.user.id)
-        if thread is None or thread.closed:
-            await interaction.response.send_message("Thread already closed.", ephemeral=True)
-            return
-
-        await interaction.response.defer()
-
-        try:
-            await thread.close(
-                closer=interaction.user,
-                message="User closed the ticket using the button.",
-                silent=False
-            )
-        except Exception as e:
-            logger.error(f"[CloseButton] Failed: {e}")
+CUSTOM_EMOJI_ID = 1310111960741707836
+EMOJI_NAME = "IW_Cross"
 
 
-class CloseButton(commands.Cog):
+class CloseReaction(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_thread_reply(self, thread, from_mod, message, anonymous, plain):
-
         if not from_mod:
             return
 
         try:
-            view = CloseButtonView(self.bot, thread.recipient)
-            await message.edit(view=view)
+            emoji = discord.PartialEmoji(name=EMOJI_NAME, id=CUSTOM_EMOJI_ID)
+            await message.add_reaction(emoji)
         except Exception as e:
-            logger.warning(f"[CloseButton] Failed to attach button: {e}")
+            logger.warning(f"[CloseReaction] Failed to add reaction: {e}")
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+
+        # Wrong emoji
+        if payload.emoji.id != CUSTOM_EMOJI_ID:
+            return
+
+        # Must be DM
+        if payload.guild_id is not None:
+            return
+
+        user = self.bot.get_user(payload.user_id)
+        if user is None or user.bot:
+            return
+
+        thread = await self.bot.threads.find(user.id)
+        if thread is None or thread.closed:
+            return
+
+        # 🔥 ONLY allow latest message to trigger close
+        try:
+            last_message = await thread.channel.fetch_message(thread.last_message.id)
+            if payload.message_id != last_message.id:
+                return
+        except:
+            return
+
+        try:
+            await thread.close(
+                closer=user,
+                message="User closed the ticket.",
+                silent=False
+            )
+        except Exception as e:
+            logger.error(f"[CloseReaction] Failed to close thread: {e}")
 
 
 async def setup(bot):
-    await bot.add_cog(CloseButton(bot))
+    await bot.add_cog(CloseReaction(bot))
