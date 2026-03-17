@@ -13,6 +13,7 @@ class CloseReaction(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    # 🔹 Add reaction to ALL outgoing messages (snippet safe)
     @commands.Cog.listener()
     async def on_thread_reply(self, thread, from_mod, message, anonymous, plain):
         if not from_mod:
@@ -20,34 +21,47 @@ class CloseReaction(commands.Cog):
 
         try:
             user = thread.recipient
-            dm_channel = user.dm_channel or await user.create_dm()
+            dm = user.dm_channel or await user.create_dm()
 
-            # 🔥 Look through recent messages (handles snippets)
-            async for msg in dm_channel.history(limit=5):
+            async for msg in dm.history(limit=5):
                 if msg.author.id == self.bot.user.id:
-                    emoji = discord.PartialEmoji(name=EMOJI_NAME, id=CUSTOM_EMOJI_ID)
-                    await msg.add_reaction(emoji)
-                    break  # only react once per message send
+                    try:
+                        emoji = discord.PartialEmoji(name=EMOJI_NAME, id=CUSTOM_EMOJI_ID)
+                        await msg.add_reaction(emoji)
+                    except discord.NotFound:
+                        continue
+                    except Exception as e:
+                        logger.warning(f"[CloseReaction] Reaction error: {e}")
 
         except Exception as e:
             logger.warning(f"[CloseReaction] Failed to add reaction: {e}")
 
+    # 🔹 CORRECT reaction handler
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
 
         if payload.emoji.id != CUSTOM_EMOJI_ID:
             return
 
+        # must be DM
         if payload.guild_id is not None:
             return
 
-        user = self.bot.get_user(payload.user_id)
-        if user is None or user.bot:
+        if payload.user_id == self.bot.user.id:
             return
 
-        thread = await self.bot.threads.find(user.id)
+        try:
+            # 🔥 THIS IS THE KEY FIX
+            thread = await self.bot.threads.find_by_message(payload.message_id)
+
+        except Exception as e:
+            logger.error(f"[CloseReaction] Thread lookup failed: {e}")
+            return
+
         if thread is None or thread.closed:
             return
+
+        user = self.bot.get_user(payload.user_id)
 
         try:
             await thread.close(
