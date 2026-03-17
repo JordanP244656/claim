@@ -7,39 +7,38 @@ logger = getLogger(__name__)
 
 class TicketName(commands.Cog):
 
+    counter = None
+
     def __init__(self, bot):
         self.bot = bot
 
 
-    def get_next_ticket_number(self, guild):
-
+    async def initialize_counter(self, guild):
         highest = 0
 
         for channel in guild.text_channels:
-
             name = channel.name
-
-            # Only consider channels that are pure numbers
             if name.isdigit():
-
                 num = int(name)
-
                 if num > highest:
                     highest = num
 
-        return highest + 1
+        TicketName.counter = highest
 
 
     @commands.Cog.listener()
     async def on_thread_ready(self, thread, creator, category, initial_message):
 
         try:
-
             guild = thread.channel.guild
 
-            next_number = self.get_next_ticket_number(guild)
+            # initialize counter once
+            if TicketName.counter is None:
+                await self.initialize_counter(guild)
 
-            ticket_id = f"{next_number:03}"
+            TicketName.counter += 1
+
+            ticket_id = f"{TicketName.counter:03}"
 
             await thread.channel.edit(name=ticket_id)
 
